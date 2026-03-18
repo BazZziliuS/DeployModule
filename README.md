@@ -28,7 +28,17 @@
   "enabled": true,
   "tokens": [
     {
-      "token": "your-secret-token",
+      "token": "technomagic-secret-token",
+      "allowedProfiles": ["TechnoMagic"],
+      "allowedClients": ["TechnoMagic-*"]
+    },
+    {
+      "token": "hitech-secret-token",
+      "allowedProfiles": ["HiTech"],
+      "allowedClients": ["HiTech-*"]
+    },
+    {
+      "token": "admin-token-full-access",
       "allowedProfiles": [],
       "allowedClients": []
     }
@@ -36,23 +46,22 @@
 }
 ```
 
-При первом запуске генерируется случайный токен с полным доступом.
+При первом запуске генерируется один случайный токен с полным доступом.
+
+### Несколько токенов
+
+Модуль поддерживает неограниченное количество токенов. Каждый токен может быть привязан к конкретным сборкам — например, отдельный токен для TechnoMagic и отдельный для HiTech. Это позволяет разграничить доступ между CI-пайплайнами разных сборок.
 
 ### Ограничение доступа токена
 
-- `allowedProfiles` — список glob-паттернов разрешённых профилей
-- `allowedClients` — список glob-паттернов разрешённых клиентов
-- Пустой список = доступ ко всему
-- Поддерживается `*` как wildcard
+| Поле | Описание |
+|------|----------|
+| `token` | Секретный ключ для авторизации |
+| `allowedProfiles` | Glob-паттерны разрешённых профилей |
+| `allowedClients` | Glob-паттерны разрешённых клиентов |
 
-Пример токена с ограниченным доступом:
-```json
-{
-  "token": "ci-token",
-  "allowedProfiles": ["Production"],
-  "allowedClients": ["Production-*"]
-}
-```
+- Пустой список `[]` = доступ ко всему
+- Поддерживается `*` как wildcard (например `HiTech-*` разрешает `HiTech-1.20.1`, `HiTech-1.19.4` и т.д.)
 
 ## API
 
@@ -102,20 +111,34 @@ curl -X POST "http://localhost:9274/webapi/upload/client?name=MyClient&token=TOK
 
 ### GitHub Actions
 
+Для каждой сборки используется свой секрет с токеном:
+
 ```yaml
-- name: Upload profile
+# Деплой сборки TechnoMagic
+- name: Deploy TechnoMagic profile
   run: |
     curl -X POST \
       "${{ secrets.LAUNCHER_URL }}/webapi/upload/profile" \
-      -H "X-Upload-Token: ${{ secrets.UPLOAD_TOKEN }}" \
-      -d @profile.json \
+      -H "X-Upload-Token: ${{ secrets.TECHNOMAGIC_TOKEN }}" \
+      -d @technomagic-profile.json \
       --fail --show-error
 
-- name: Upload client
+- name: Deploy TechnoMagic client
   run: |
     curl -X POST \
-      "${{ secrets.LAUNCHER_URL }}/webapi/upload/client?name=MyClient" \
-      -H "X-Upload-Token: ${{ secrets.UPLOAD_TOKEN }}" \
+      "${{ secrets.LAUNCHER_URL }}/webapi/upload/client?name=TechnoMagic-1.20.1" \
+      -H "X-Upload-Token: ${{ secrets.TECHNOMAGIC_TOKEN }}" \
+      --data-binary @client.zip \
+      --fail --show-error
+```
+
+```yaml
+# Деплой сборки HiTech (отдельный пайплайн, свой токен)
+- name: Deploy HiTech client
+  run: |
+    curl -X POST \
+      "${{ secrets.LAUNCHER_URL }}/webapi/upload/client?name=HiTech-1.20.1" \
+      -H "X-Upload-Token: ${{ secrets.HITECH_TOKEN }}" \
       --data-binary @client.zip \
       --fail --show-error
 ```
