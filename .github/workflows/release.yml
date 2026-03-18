@@ -22,7 +22,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build JAR
-        run: ./gradlew jar
+        run: chmod +x ./gradlew && ./gradlew jar
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
